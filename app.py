@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin  # added cross_origin
 import json
 import tensorflow as tf
 import numpy as np
@@ -10,8 +10,8 @@ from nltk.stem import WordNetLemmatizer
 import os
 
 nltk.download('wordnet')
-app= Flask(__name__)
-CORS(app)
+app = Flask(__name__)
+# Using one CORS initialization with origins set to '*' for all routes.
 CORS(app, resources={r"/*": {"origins": "*"}})
 model=tf.keras.models.load_model('assests/full_model.h5')
 with open('assests/tokenizer.pickle', 'rb') as handle:
@@ -60,6 +60,7 @@ def tokenize(X):
     return X
 
 # The /predict endpoint only supports POST requests.
+@cross_origin()  # added decorator
 @app.route('/predict', methods=['POST'])
 def get_text():
     try:
@@ -81,6 +82,7 @@ def get_text():
         return jsonify({'error': str(e)}), 500
 
 
+@cross_origin()  # added decorator
 @app.route('/download', methods=['POST'])
 def download_file():
     try:
@@ -105,14 +107,12 @@ def download_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
-        # Clean up the temporary file if it exists
         if os.path.exists("output.txt"):
             os.remove("output.txt")
 
+@cross_origin()  # added decorator
 @app.route('/')
 def index():
-    # This is the Flask backend server running on http://localhost:5000.
-    # Use this URL in your frontend to communicate with this server.
     return jsonify({'message': 'Backend running'})
 
 if __name__ == '__main__':
