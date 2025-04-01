@@ -12,6 +12,7 @@ import os
 nltk.download('wordnet')
 app= Flask(__name__)
 CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 model=tf.keras.models.load_model('assests/full_model.h5')
 with open('assests/tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
@@ -63,16 +64,22 @@ def tokenize(X):
 def get_text():
     try:
         data = request.get_json()
-        # Assuming the payload contains {"text": "..."}
-        userText = data.get("text", "")
-        # Preprocess the text
+        if not data or "text" not in data:
+            return jsonify({'error': 'Invalid request format'}), 400
+
+        userText = data["text"]
         cleaned_text = clean([userText], stopwords)
         tokenized = tokenize(cleaned_text)
+        
         prediction = model.predict(tokenized)
         pred_class = "positive tweet" if prediction >= 0.5 else "negative tweet"
+
         return jsonify({'prediction': pred_class})
+
     except Exception as e:
+        print(f"Error in /predict: {e}")  # Logs error to console
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/download', methods=['POST'])
 def download_file():
